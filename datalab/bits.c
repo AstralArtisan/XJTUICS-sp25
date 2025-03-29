@@ -1,7 +1,7 @@
 /* 
  * CS:APP Data Lab 
  * 
- * <Please put your name and userid here>
+ * 张钊源 2236114968-ics
  * 
  * bits.c - Source file with your solutions to the Lab.
  *          This is the file you will hand in to your instructor.
@@ -12,7 +12,6 @@
  * it's not good practice to ignore compiler warnings, but in this
  * case it's OK.  
  */
-
 #if 0
 /*
  * Instructions to Students:
@@ -160,7 +159,7 @@ NOTES:
  *   Rating: 1
  */
 int isZero(int x) {
-  return 2;
+   return !x;
 }
 /* 
  * bitXor - x^y using only ~ and & 
@@ -170,7 +169,13 @@ int isZero(int x) {
  *   Rating: 1
  */
 int bitXor(int x, int y) {
-  return 2;
+   /* z = (x & y); Find the bits which are the same bit 1 for x and y
+    * z1 = ~z; Find the bits which are not the same bit 1 for x and y
+    * a = x & z1, b = y & z1; Find the 1s which x have but y don't have(a) or y have but x don't have(b) 
+    * c = a | b = (x & z1) | (y & z1) = (x | y) & z1; c shows the different bits
+    * so c = ~(~x & ~y) & z1 = ~(~x & ~y) & ~(x & y); Clear the |, get the answer
+    */
+  return ~(~x & ~y) & ~(x & y);
 }
 // Rating 2
 /* 
@@ -181,7 +186,11 @@ int bitXor(int x, int y) {
  *   Rating: 2
  */
 int copyLSB(int x) {
-  return 2;
+   /* 1. x & 1 : Get the LSB
+    * 2. << 31 : Let the LSB become the sign
+    * 3. >> 31 : Arithmetic, copy the sign 
+    */
+  return ((x & 1) << 31) >> 31;
 }
 /* 
  * isNegative(x) - return 1 if x < 0, return 0 otherwise 
@@ -191,7 +200,8 @@ int copyLSB(int x) {
  *   Rating: 2
  */
 int isNegative(int x) {
-  return 2;
+   /* Just like copyLSB. */
+  return (x >> 31) & 1;
 }
 /* 
  * allEvenBits - return 1 if all even-numbered bits in word set to 1
@@ -202,7 +212,13 @@ int isNegative(int x) {
  *   Rating: 2
  */
 int allEvenBits(int x) {
-  return 2;
+   /* Choose mask = 01010101010101010101010101010101 as a number which just meets the requirement all even-numbered bits in word set to 1
+    * ((x & mask) ^ mask) finds the correct numbers. If (x & mask) contains any 0 on even bits, it will turn out a non-0 number.
+    */
+   int mask = 0x55;               // 0x55 = 01010101
+   mask |= mask << 8;             // 0x5555
+   mask |= mask << 16;            // 0x55555555
+   return !((x & mask) ^ mask);
 }
 /* 
  * byteSwap - swaps the nth byte and the mth byte
@@ -214,7 +230,15 @@ int allEvenBits(int x) {
  *  Rating: 2
  */
 int byteSwap(int x, int n, int m) {
-    return 2;
+   int m8 = m << 3; // m * 8
+   int n8 = n << 3; // n * 8
+   int a = (x >> m8) & 0xFF; // Collect the mth byte
+   int b = (x >> n8) & 0xFF; // Collect the nth byte
+   int aa = a << n8; // Move the mth to the nth
+   int bb = b << m8; // Move the nth to the mth
+   int x0 = x & ~(0xFF << n8) & ~(0xFF << m8); // Clear the mth and nth byte in x
+   int x1 = x0 | aa | bb; // Swap!
+   return x1;
 }
 /* 
  * removeRightmostOne(x) - remove the rightmost 1 from x
@@ -224,7 +248,9 @@ int byteSwap(int x, int n, int m) {
  *   Rating: 2
  */
 int removeRightmostOne(int x) {
-    return 2;
+   int a = (~x + 1) & x; // Find the rightmost 1
+   int ans = x + (~a + 1); // x - a
+   return ans;
 }
 // Rating 3
 /*
@@ -236,9 +262,15 @@ int removeRightmostOne(int x) {
  *   Max ops: 20
  *   Rating: 3
  */
-int maskBelowHighest(int x)
-{
-    return 2;
+int maskBelowHighest(int x) {
+    // Shift to right and use | to change all the bits below the highest.
+    int y;
+    y = x | (x >> 1);
+    y = y | (y >> 2);
+    y = y | (y >> 4);
+    y = y | (y >> 8);
+    y = y | (y >> 16); // Note: 32 bytes
+    return y;
 }
 /*
  * largerAbsVal - return the number who has a larger Abs. if |a| == |b|, return the first.
@@ -249,17 +281,79 @@ int maskBelowHighest(int x)
  *   Rating: 3
  */
 int largerAbsVal(int a, int b) {
-  return 2;
+  int abs_a = (a ^ (a >> 31)) + (1 & (a >> 31)), abs_b = (b ^ (b >> 31)) + (1 & (b >> 31)); // Get the Abs
+  int diff = abs_a + (~abs_b + 1); // |a| - |b|
+  int sign  = diff >> 31; // Get the sign of diff
+  return (~sign & a) | (sign & b);
 }
 // Rating 4
 /*
  * bitReverse - Reverse bits in a 32-bit word
  *   Examples: bitReverse(0x80000002) = 0x40000001
- *             bitReverse(0x89ABCDEF) = 0xF7D3D591
+ *             bitReverse(0x89AfBCDEF) = 0xF7D3D591
  *   Legal ops: ! ~ & ^ | + << >>
  *   Max ops: 45
  *   Rating: 4
  */
 int bitReverse(int x) {
-    return 2;
+  /* Use the thought of Divide-and-Conquer.
+   * Change every neighbors, then divide the number into groups with 2, 4 ,8... bits, and repeat the operation.
+   * We use 00101100 -> 00110100 as an example.
+   */ 
+  /* My first try, 48 ops.
+
+  int m1, m2, m3, m4, m5, m6, m7, m8;
+  // Step 1: Swap odd and even bits
+  m1 = 0x55;
+  m1 |= m1 << 8; m1 |= m1 << 16; // mask1 = 0x55555555 = 0b01010101...
+  m2 = ~m1; // mask2 = 0xAAAAAAAA = 0b10101010...
+  x = ((x & m1) << 1) | (((x & m2) >> 1) & m1); // Reverse the neighbors (e.g., 00101100 -> 00011100)
+  
+  // Step 2: Swap consecutive pairs of bits
+  m3 = 0x33;
+  m3 |= m3 << 8; m3 |= m3 << 16; // mask3 = 0x33333333 = 0b00110011...
+  m4 = ~m3; // mask4 = 0xCCCCCCCC = 0b11001100...
+  x = ((x & m3) << 2) | (((x & m4) >> 2) & m3); // Reverse the neighbors in twos (e.g., 00011100 -> 01000011)
+  
+  // Step 3: Swap nibbles (4-bit groups)
+  m5 = 0x0F;
+  m5 |= m5 << 8; m5 |= m5 << 16; // mask5 = 0x0F0F0F0F = 0b00001111...
+  m6 = ~m5; // mask6 = 0xF0F0F0F0 = 0b11110000...
+  x = ((x & m5) << 4) | (((x & m6) >> 4) & m5); // Reverse the nibbles
+  
+  // Step 4: Swap bytes (8-bit groups)
+  m7 = 0xFF;
+  m7 |= m7 << 16; // mask7 = 0x00FF00FF = 0b0000000011111111...
+  m8 = m7 << 8; // mask8 = 0xFF00FF00 = 0b1111111100000000...
+  x = ((x & m7) << 8) | (((x & m8) >> 8) & m7); // Reverse the bytes
+  
+  // Step 5: Swap 16-bit halves
+  x = (x << 16) | ((x >> 16) & (0xFF | (0xFF << 8)));
+  return x;
+
+  */
+  int m1, m2, m3, m4;
+  // Step 1: Swap odd and even bits
+  m1 = 0x55;
+  m1 |= m1 << 8; m1 |= m1 << 16; // mask1 = 0x55555555 = 0b01010101...
+  x = (((x >> 1) & m1)) | ((x & m1) << 1);
+
+  // Step 2: Swap consecutive pairs of bits
+  m2 = 0x33;
+  m2 |= m2 << 8; m2 |= m2 << 16; // mask2 = 0x33333333 = 0b00110011...
+  x = (((x >> 2) & m2)) | ((x & m2) << 2);
+
+  // Step 3: Swap nibbles (4-bit groups)
+  m3 = 0x0F;
+  m3 |= m3 << 8; m3 |= m3 << 16; // mask5 = 0x0F0F0F0F = 0b00001111...
+  x = (((x >> 4) & m3)) | ((x & m3) << 4);
+
+  // Step 4: Swap bytes (8-bit groups)
+  m4 = 0xFF;
+  m4 |= m4 << 16; // mask7 = 0x00FF00FF = 0b0000000011111111...
+  x = (((x >> 8) & m4)) | ((x & m4) << 8);
+  
+  // Step 5: Swap 16-bit halves
+  x = (((x >> 16) & (0xFF | (0xFF << 8)))) | (x << 16);
+  return x;
 }
