@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "getopt_core.h": "c",
+        "cachelab.h": "c"
+    }
+}
